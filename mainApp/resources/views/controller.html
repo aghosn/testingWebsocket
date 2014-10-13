@@ -1,0 +1,47 @@
+<html >
+  <head>
+    <title>Look at my triangle</title>
+  </head>
+  <body>
+    <script type="text/javascript">
+      window.onload = function() {
+        var conn = new WebSocket('ws://localhost:8001');
+        var video = document.getElementById("video");
+
+        var b = document.getElementById("button");
+
+        b.onclick = function () {
+         conn.send('h'); 
+        }
+        conn.onmessage = function(ev) {
+          console.log("Message received!");
+          console.log(video.paused);
+          if(video.paused) {
+            video.play();
+          }else{
+            video.pause();
+          }
+        }
+      }
+    </script>
+
+    <center>
+    <h1>My simple display triangle</h1>
+    <img src="http://localhost:8000/triangle.png" width="266" height="150">
+    <h4>funny triangle</h4>
+    </center>
+    <p>This is just a way for me to test if I can display an image in this page like that </p>
+    <p>
+    <video id="video" width="400">
+      <source src="http://localhost:8000/sample.mp4" type="video/mp4">
+        Your browser does not support HTML5 video.
+      </video>
+   </p>
+   <center>
+   <p>
+    <input type="submit" id="button" value="Play/Pause"/> 
+   </p>
+   </center>
+  </body>
+  
+</html>
