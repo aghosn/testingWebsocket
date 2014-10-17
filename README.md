@@ -17,5 +17,6 @@ So far it has a webserver in java, a Server listening for websockets, and Client
 ## Issues
 * HttpServer does not support well video streaming. Hence, the video.currentTime doesn't work. That means that the play/pause button simply stops and pause the video on all clients, but does not reset the currentTime.
 * The above problem can be ignored by running only the server, and instead opening the index.html file with a web browser. 
-## TODO
 
+## TODO
+* fix the issues ?
