@@ -98,9 +98,8 @@ public class ClientHandler extends Thread {
  
   /*Responsible for reading the Data correctly*/
   private MessageWrapper interpretData(byte[] data) throws Exception {
-    /*Data is either play of [play;pause]double */
-    if(data == null || (data.length < PLAYSIZE+8 && data.length != PLAYSIZE+1))
-      throw new Exception("--Data is too short "+ data.length +"!--");
+    if(data == null || (data.length < PLAYSIZE))
+      throw new Exception("--Data is null !--");
 
     String msg = new String(data);
     System.out.println("The message received --"+msg+"--"); 
@@ -110,31 +109,35 @@ public class ClientHandler extends Thread {
     }
 
     
-    if(msg.substring(0, PAUSESIZE).equals("pause") && msg.length() == PAUSESIZE + 8) {
+    if(msg.substring(0, PAUSESIZE).equals("pause") && msg.length() > PAUSESIZE) {
      String time = msg.substring(PAUSESIZE);
      return (new MessageWrapper(Order.Pause, Double.parseDouble(time)));
     }
 
-    if(msg.substring(0, PLAYSIZE).equals("play") && msg.length() == PLAYSIZE + 8) {
+    if(msg.substring(0, PLAYSIZE).equals("play") && msg.length() > PLAYSIZE) {
       String time = msg.substring(PLAYSIZE);
       return (new MessageWrapper(Order.Play, Double.parseDouble(time)));
     }
     
-    throw new Exception("--Data doesn't respect the format !--");
-    
+    throw new Exception("--Data doesn't respect the format !--");  
   }
+
   /*Broadcast message to the other clients*/
   private static synchronized void broadcast(MessageWrapper msg) {
     DataOutputStream out;
-    byte[] send = msg.toSend();
-    for( Socket s: Server.connections) {
-      try {
+    try {
+      byte[] send = msg.toSend();
+      for( Socket s: Server.connections) {
+        try {
          out = new DataOutputStream(s.getOutputStream());
          out.write(send);
          out.flush();
-      } catch(Exception e) {
-        /*TODO do something meaningful... oh bretzels !*/
+        } catch(Exception e) {
+          /*TODO do something meaningful... oh bretzels !*/
+        }
       }
+    } catch(Exception e) {
+      System.err.println("Error: message "+msg+" cannot be sent");
     }
   }
 
@@ -148,18 +151,18 @@ public class ClientHandler extends Thread {
       this.time = time;
     }
 
-    public byte[] toSend() {
-      int size = (order == Order.Pause)? PAUSESIZE : PLAYSIZE;
+    public byte[] toSend() throws Exception {
       String string = (order == Order.Pause)? "pause" : "play";
+      string = string +""+time; 
+
+      byte[] message = string.getBytes("UTF-8");
+      byte[] send = new byte[2+message.length];
       
-      byte[] send = new byte[2+size+8];
-      
-      send[0] = -126;
-      send[1] = (byte) (size +8);
+      send[0] = -127;
+      send[1] = (byte) (message.length);
       
       
-      System.arraycopy(string.getBytes(), 0, send, 2, string.length());
-      System.arraycopy(toByteArray(time), 0, send, 2+string.length(), 8);
+      System.arraycopy(message, 0, send, 2, message.length);
       
       return send;
     }
@@ -168,7 +171,11 @@ public class ClientHandler extends Thread {
       byte[] bytes = new byte[8];
       ByteBuffer.wrap(bytes).putDouble(value);
       return bytes;
-    } 
+    }
+    
+    public String toString() {
+      return ("{Order: "+order+", time: "+time+"}");
+    }
   }
   
   /*Possible orders*/
