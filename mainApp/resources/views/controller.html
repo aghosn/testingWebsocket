@@ -14,7 +14,7 @@
          conn.send('play'+video.currentTime); 
         }
         conn.onmessage = function(ev) {
-          console.log("Message received!");
+          console.log("Message received! "+ev.data);
           console.log(video.paused);
           if(video.paused) {
             video.play();

@@ -1,9 +1,12 @@
 import java.net.Socket;
 import java.io.*;
+import java.nio.ByteBuffer;
 
 public class ClientHandler extends Thread {
-  private static final byte[] msg = new byte[]{-127, 2, 1, 1};
   private static Socket client; 
+  
+  private static final int PLAYSIZE = "play".length();
+  private static final int PAUSESIZE = "pause".length();
 
   public ClientHandler(Socket socket) {
     client = socket;
@@ -16,8 +19,9 @@ public class ClientHandler extends Thread {
     try {
       DataInputStream in = new DataInputStream(client.getInputStream());
       do {
+
         /*Discard the first byte*/
-        in.readByte();
+        System.out.println("Header "+in.readByte());
         int length = readLength(in);
         if(length == -1)
           throw new IOException();
@@ -28,7 +32,7 @@ public class ClientHandler extends Thread {
         
         MessageWrapper msg = interpretData(data);
         System.out.println("Message "+msg.order +" : "+msg.time);
-        broadcast();
+        broadcast(msg);
       } while(!client.isClosed());
     } catch(IOException e) {
       /**/
@@ -95,7 +99,7 @@ public class ClientHandler extends Thread {
   /*Responsible for reading the Data correctly*/
   private MessageWrapper interpretData(byte[] data) throws Exception {
     /*Data is either play of [play;pause]double */
-    if(data == null || (data.length < "play".length()+8 && data.length != "play".length()+1))
+    if(data == null || (data.length < PLAYSIZE+8 && data.length != PLAYSIZE+1))
       throw new Exception("--Data is too short "+ data.length +"!--");
 
     String msg = new String(data);
@@ -105,14 +109,14 @@ public class ClientHandler extends Thread {
       return new MessageWrapper(Order.Play, 0);
     }
 
-    /*TODO Check for double size !*/
-    if(msg.substring(0, "pause".length()).equals("pause") && msg.length() == 13) {
-     String time = msg.substring("pause".length());
+    
+    if(msg.substring(0, PAUSESIZE).equals("pause") && msg.length() == PAUSESIZE + 8) {
+     String time = msg.substring(PAUSESIZE);
      return (new MessageWrapper(Order.Pause, Double.parseDouble(time)));
     }
 
-    if(msg.substring(0, "play".length()).equals("play") && msg.length() == 12) {
-      String time = msg.substring("play".length());
+    if(msg.substring(0, PLAYSIZE).equals("play") && msg.length() == PLAYSIZE + 8) {
+      String time = msg.substring(PLAYSIZE);
       return (new MessageWrapper(Order.Play, Double.parseDouble(time)));
     }
     
@@ -120,13 +124,13 @@ public class ClientHandler extends Thread {
     
   }
   /*Broadcast message to the other clients*/
-  /*TODO remove the static synchronized => already handles concurrency*/
-  private static synchronized void broadcast() {
+  private static synchronized void broadcast(MessageWrapper msg) {
     DataOutputStream out;
+    byte[] send = msg.toSend();
     for( Socket s: Server.connections) {
       try {
          out = new DataOutputStream(s.getOutputStream());
-         out.write(msg);
+         out.write(send);
          out.flush();
       } catch(Exception e) {
         /*TODO do something meaningful... oh bretzels !*/
@@ -142,6 +146,28 @@ public class ClientHandler extends Thread {
     public MessageWrapper(Order order, double time) {
       this.order = order; 
       this.time = time;
+    }
+
+    public byte[] toSend() {
+      int size = (order == Order.Pause)? PAUSESIZE : PLAYSIZE;
+      String string = (order == Order.Pause)? "pause" : "play";
+      
+      byte[] send = new byte[2+size+8];
+      
+      send[0] = -126;
+      send[1] = (byte) (size +8);
+      
+      
+      System.arraycopy(string.getBytes(), 0, send, 2, string.length());
+      System.arraycopy(toByteArray(time), 0, send, 2+string.length(), 8);
+      
+      return send;
+    }
+
+    private byte[] toByteArray(double value) {
+      byte[] bytes = new byte[8];
+      ByteBuffer.wrap(bytes).putDouble(value);
+      return bytes;
     } 
   }
   
