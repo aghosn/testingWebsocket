@@ -26,13 +26,14 @@ public class ClientHandler extends Thread {
         byte[] data = readData(length, mask, in);
         print(data);
 
-        MessageWrapper msg = interpretData(data); 
+       // MessageWrapper msg = interpretData(data); 
         broadcast();
       } while(!client.isClosed());
     } catch(IOException e) {
       /**/
     } catch(Exception e) {
-      System.err.println("Error: ClientHandler received "+e);
+      System.err.println("Error: ClientHandler received ");
+      e.printStackTrace();
     } finally {
       /*Remove the socket*/
       try{
@@ -85,7 +86,7 @@ public class ClientHandler extends Thread {
     byte[] data = new byte[length];
     in.read(data);
     for(int i = 0; i < length; i++) { 
-      data[i] = (byte) (data[i] ^ mask[i]);
+      data[i] = (byte) (data[i] ^ mask[i % 4]);
     }
     return data;
   }
