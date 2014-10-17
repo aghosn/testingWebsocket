@@ -25,8 +25,9 @@ public class ClientHandler extends Thread {
         byte[] mask = readMask(in);
         byte[] data = readData(length, mask, in);
         print(data);
-
-       // MessageWrapper msg = interpretData(data); 
+        
+        MessageWrapper msg = interpretData(data);
+        System.out.println("Message "+msg.order +" : "+msg.time);
         broadcast();
       } while(!client.isClosed());
     } catch(IOException e) {
@@ -93,19 +94,26 @@ public class ClientHandler extends Thread {
  
   /*Responsible for reading the Data correctly*/
   private MessageWrapper interpretData(byte[] data) throws Exception {
-    /*TODO tighter bound should be used*/
-    if(data == null || data.length < "pause".length())
-      throw new Exception("--Data is too short !--");
+    /*Data is either play of [play;pause]double */
+    if(data == null || (data.length < "play".length()+8 && data.length != "play".length()+1))
+      throw new Exception("--Data is too short "+ data.length +"!--");
 
     String msg = new String(data);
+    System.out.println("The message received --"+msg+"--"); 
     
-    /*TODO Check for double size !*/
-    if(msg.substring(0, "pause".length()).equals("pause")) {
-      return (new MessageWrapper(Order.Pause, Double.parseDouble(msg.substring("pause".length()))));
+    if(msg.equals("play0")){
+      return new MessageWrapper(Order.Play, 0);
     }
 
-    if(msg.substring(0, "play".length()).equals("play")) {
-      return (new MessageWrapper(Order.Play, Double.parseDouble(msg.substring("play".length()))));
+    /*TODO Check for double size !*/
+    if(msg.substring(0, "pause".length()).equals("pause") && msg.length() == 13) {
+     String time = msg.substring("pause".length());
+     return (new MessageWrapper(Order.Pause, Double.parseDouble(time)));
+    }
+
+    if(msg.substring(0, "play".length()).equals("play") && msg.length() == 12) {
+      String time = msg.substring("play".length());
+      return (new MessageWrapper(Order.Play, Double.parseDouble(time)));
     }
     
     throw new Exception("--Data doesn't respect the format !--");
