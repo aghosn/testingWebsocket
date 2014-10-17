@@ -75,12 +75,12 @@ public class Server extends Thread {
     return md.digest(concat.getBytes());
   }
  
- /* public static void main(String[] args) {
+ public static void main(String[] args) {
     try{
       Server server = new Server(8001);
       server.start();
     } catch(Exception e) {
       e.printStackTrace();
     }
-  }*/
+  }
 }

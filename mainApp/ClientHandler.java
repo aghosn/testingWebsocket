@@ -21,7 +21,7 @@ public class ClientHandler extends Thread {
       do {
 
         /*Discard the first byte*/
-        System.out.println("Header "+in.readByte());
+        in.readByte();
         int length = readLength(in);
         if(length == -1)
           throw new IOException();
@@ -126,6 +126,7 @@ public class ClientHandler extends Thread {
   private static synchronized void broadcast(MessageWrapper msg) {
     DataOutputStream out;
     try {
+      System.out.println("Sending "+msg);
       byte[] send = msg.toSend();
       for( Socket s: Server.connections) {
         try {

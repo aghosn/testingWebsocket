@@ -20,7 +20,6 @@ public class MyHttpServer {
        /*The HTTP server handling*/
         HttpServer server = HttpServer.create(new InetSocketAddress(8000), 0);
         server.createContext("/test", new MyHandler());
-        server.createContext("/triangle.png", new GeneralDisplay("image/png", "resources/images/triangle.png"));
         server.createContext("/index.html", new GeneralDisplay("text/html", "resources/views/controller.html"));
         server.createContext("/sample.mp4", new GeneralDisplay("application/octet-stream", "resources/videos/longer.mp4"));
         server.setExecutor(null); // creates a default executor
