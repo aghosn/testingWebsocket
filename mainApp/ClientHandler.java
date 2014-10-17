@@ -25,10 +25,14 @@ public class ClientHandler extends Thread {
         byte[] mask = readMask(in);
         byte[] data = readData(length, mask, in);
         print(data);
+
+        MessageWrapper msg = interpretData(data); 
         broadcast();
       } while(!client.isClosed());
     } catch(IOException e) {
       /**/
+    } catch(Exception e) {
+      System.err.println("Error: ClientHandler received "+e);
     } finally {
       /*Remove the socket*/
       try{
@@ -37,7 +41,7 @@ public class ClientHandler extends Thread {
       }catch(Exception e1) {};
     }
   }
-
+  
   private void print(byte[] b) {
     System.out.println("data has size: "+b.length);
     System.out.print("{");
@@ -45,14 +49,6 @@ public class ClientHandler extends Thread {
       System.out.print(b[i] + "; ");
     }
     System.out.println("}");
-  }
-  
-  private int byteToUnsigned(byte b) {
-    return b & 0xFF;
-  }
-
-  private int unmask(byte b) {
-    return b & 0x7F;
   }
 
   /*Reads the length of the data
@@ -62,7 +58,7 @@ public class ClientHandler extends Thread {
     if(in == null)
       return -1;
     
-    int b = unmask(in.readByte());
+    int b = in.readByte() & 0x7F;
     /*Length fits in one byte*/
     if(b < 126) 
       return b; 
@@ -93,7 +89,27 @@ public class ClientHandler extends Thread {
     }
     return data;
   }
+ 
+  /*Responsible for reading the Data correctly*/
+  private MessageWrapper interpretData(byte[] data) throws Exception {
+    /*TODO tighter bound should be used*/
+    if(data == null || data.length < "pause".length())
+      throw new Exception("--Data is too short !--");
 
+    String msg = new String(data);
+    
+    /*TODO Check for double size !*/
+    if(msg.substring(0, "pause".length()).equals("pause")) {
+      return (new MessageWrapper(Order.Pause, Double.parseDouble(msg.substring("pause".length()))));
+    }
+
+    if(msg.substring(0, "play".length()).equals("play")) {
+      return (new MessageWrapper(Order.Play, Double.parseDouble(msg.substring("play".length()))));
+    }
+    
+    throw new Exception("--Data doesn't respect the format !--");
+    
+  }
   /*Broadcast message to the other clients*/
   /*TODO remove the static synchronized => already handles concurrency*/
   private static synchronized void broadcast() {
@@ -107,5 +123,22 @@ public class ClientHandler extends Thread {
         /*TODO do something meaningful... oh bretzels !*/
       }
     }
+  }
+
+  /*Wrapps the content of client's side message*/
+  static class MessageWrapper {
+    Order order;
+    double time;
+
+    public MessageWrapper(Order order, double time) {
+      this.order = order; 
+      this.time = time;
+    } 
+  }
+  
+  /*Possible orders*/
+  static enum Order {
+    Pause, 
+    Play;
   }
 }
